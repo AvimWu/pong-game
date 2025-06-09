@@ -1,0 +1,854 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Pong 乒乓球（手機/桌機滑鼠拖曳+BGM+全音效）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <style>
+    html, body {
+      margin:0; padding:0; height:100%; width:100vw;
+      background: radial-gradient(ellipse at 50% 38%, #202e44 0%, #22294d 70%, #24252d 100%);
+      overflow:hidden;
+      touch-action: none;
+    }
+    body {
+      width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    #score {
+      position: absolute; top: 2vw; left: 0; width: 100%;
+      color: #fff6b7; font-size: 2.3em; text-align: center; font-family: 'Segoe UI', monospace;
+      pointer-events: none; z-index: 3;
+      text-shadow: 0 0 18px #ffe99c, 0 1px 2px #222;
+      letter-spacing: 0.09em;
+      filter: drop-shadow(0 0 6px #ffe06670);
+      user-select: none;
+    }
+    .btn {
+      position: absolute;
+      right: 6vw;
+      z-index: 2;
+      font-size: 1.3em; font-family: 'Segoe UI', monospace;
+      padding: 13px 18px;
+      border-radius: 19px;
+      border: none;
+      background: linear-gradient(90deg,#fffbe6,#ffe066 50%,#fffde7 100%);
+      color: #31270d; font-weight: bold; box-shadow: 0 2px 20px #fff4b0a0;
+      opacity: 0.95; transition: all .22s;
+      min-width: 90px;
+      filter: drop-shadow(0 0 8px #ffe06666);
+      margin-bottom: 12px;
+      display: none;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn[disabled] { opacity: 0.5; background: #bdb7a7; color: #888; }
+    #ultimate1-btn { bottom: 22vw; }
+    #barL-btn { bottom: 34vw; }
+    #pong {
+      display: block;
+      margin: 0 auto;
+      background: transparent;
+      touch-action: none;
+      user-select: none;
+      box-shadow: 0 0 28px #34347780, 0 0 80px #ffe06610;
+      border-radius: 30px;
+      background-clip: padding-box;
+      background-color: rgba(25,26,38,0.92);
+      position: relative;
+      backdrop-filter: blur(2.5px);
+    }
+    #winner {
+      position: absolute; left: 0; top: 46%; width: 100%; text-align: center;
+      color: #fffbe9; font-size: 3.1em; font-family: 'Segoe UI', monospace;
+      text-shadow: 0 0 22px #ffe066cc, 0 1px 6px #222, 0 0 50px #ffd70099;
+      pointer-events: none; z-index: 10;
+      transform: translateY(-60%);
+      letter-spacing: 0.22em;
+      display: none;
+      transition: opacity 0.6s;
+      filter: blur(0.3px) brightness(1.09) drop-shadow(0 0 18px #ffe066cc);
+      backdrop-filter: blur(2px);
+      animation: glowIn 1s;
+    }
+    @keyframes glowIn {
+      from { opacity: 0; filter: blur(18px) brightness(1.5); }
+      to   { opacity: 1; filter: blur(0.3px) brightness(1.09) drop-shadow(0 0 18px #ffe066cc);}
+    }
+    #back-btn {
+      position: absolute;
+      left: 50%; top: 58%;
+      transform: translate(-50%,-50%);
+      font-size: 1.25em;
+      font-family: 'Segoe UI', monospace;
+      padding: 13px 38px;
+      border-radius: 22px;
+      border: none;
+      background: linear-gradient(90deg,#fffbe6,#ffe066 50%,#fffde7 100%);
+      color: #31270d; font-weight: bold; box-shadow: 0 2px 16px #ffe06690;
+      display: none; z-index: 15;
+      filter: drop-shadow(0 0 6px #ffe06690);
+      opacity: 0.98;
+    }
+    #gamemode-modal {
+      position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(20,20,24,0.92); z-index: 20;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      backdrop-filter: blur(2.5px);
+    }
+    #gamemode-modal h1 {
+      color: #ffe066; font-size: 2.25em; margin-bottom: 2em; font-family: 'Segoe UI', monospace;
+      text-shadow: 1px 1px 10px #ffe06699, 0 1px 2px #222;
+    }
+    .gamemode-btn {
+      font-size: 1.22em; font-family: 'Segoe UI', monospace;
+      padding: 18px 30px; margin: 20px;
+      border-radius: 22px; border: none;
+      background: linear-gradient(90deg,#fffbe6,#ffe066 70%,#fffde7 100%);
+      color: #333208; font-weight: bold; box-shadow: 0 2px 16px #ffe06699;
+      cursor: pointer; opacity: 0.93; transition: opacity .19s, box-shadow .16s;
+      filter: drop-shadow(0 0 8px #ffe06677);
+    }
+    .gamemode-btn:hover { opacity: 1; box-shadow: 0 2px 24px #ffe066; }
+    @media (max-width: 700px) {
+      #score { font-size: 1.15em; }
+      #winner { font-size: 1.22em; }
+      .btn, .gamemode-btn { font-size: 0.95em; padding: 9px 10px; min-width:50px;}
+      #barL-btn { bottom: 34vw; }
+      #ultimate1-btn { bottom: 22vw; }
+      #back-btn { font-size: 1em; padding: 8px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="gamemode-modal">
+    <h1>選擇對戰模式</h1>
+    <button class="gamemode-btn" id="mode-human">單機雙人</button>
+    <button class="gamemode-btn" id="mode-ai">AI 對戰</button>
+  </div>
+  <div id="score"></div>
+  <div id="winner"></div>
+  <button class="btn" id="barL-btn">Bar大絕招</button>
+  <button class="btn" id="ultimate1-btn">分裂大絕招</button>
+  <button id="back-btn">回到首頁</button>
+  <canvas id="pong"></canvas>
+  <script>
+    // ---- BGM 合成 ----
+let bgmAudio = null;
+function playBGM() {
+  if (bgmAudio && bgmAudio.playing) return;
+  let ctx = bgmAudio && bgmAudio.ctx ? bgmAudio.ctx : new (window.AudioContext||window.webkitAudioContext)();
+  let tempo = 136;
+  let timePerBeat = 60/tempo;
+  let t0 = ctx.currentTime + 0.04;
+  let totalLen = 7.5;
+  let melody = [0,2,4,5,7,9,11,12];
+  let root = 220;
+  for(let i=0;i<28;++i){
+    let note = melody[Math.floor(Math.random()*melody.length)];
+    let freq = root * Math.pow(2, note/12);
+    let o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = ["triangle","sawtooth"][i%2];
+    o.frequency.value = freq;
+    let start = t0+i*timePerBeat*0.27;
+    let end = start+timePerBeat*0.19;
+    g.gain.setValueAtTime(0.05, start);
+    g.gain.linearRampToValueAtTime(0.001, end);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(start); o.stop(end);
+    o.onended = ()=>{o.disconnect();g.disconnect();}
+  }
+  for(let i=0;i<15;++i){
+    let g = ctx.createGain(), b = ctx.createOscillator();
+    b.type="square";
+    b.frequency.setValueAtTime(60+Math.random()*16, t0+i*timePerBeat*0.51);
+    g.gain.setValueAtTime(0.13, t0+i*timePerBeat*0.51);
+    g.gain.linearRampToValueAtTime(0, t0+i*timePerBeat*0.56);
+    b.connect(g); g.connect(ctx.destination);
+    b.start(t0+i*timePerBeat*0.51); b.stop(t0+i*timePerBeat*0.56);
+    b.onended = ()=>{b.disconnect();g.disconnect();}
+  }
+  bgmAudio = {ctx:ctx, playing:true};
+  setTimeout(()=>{ bgmAudio.playing=false; }, totalLen*1000);
+}
+function stopBGM(fade=1.3){
+  if(!bgmAudio||!bgmAudio.ctx) return;
+  let ctx = bgmAudio.ctx;
+  try {
+    let dest = ctx.destination;
+    let now = ctx.currentTime;
+    dest.gain ? dest.gain.linearRampToValueAtTime(0, now+fade) : null;
+    setTimeout(()=>{if(ctx.state!=="closed"){ctx.close();}},fade*1000+600);
+  } catch(e){}
+  bgmAudio.playing=false;
+}
+
+// --- 新增：戰鬥激烈BGM ---
+let battleBGMctx = null, battleBGMPlaying = false, battleBGMInterval = null;
+function playBattleBGM() {
+  if(battleBGMPlaying) return;
+  battleBGMPlaying = true;
+  function playLoop() {
+    if(!battleBGMPlaying) return;
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    battleBGMctx = ctx;
+    const tempo = 164, beatLen = 60/tempo, t0 = ctx.currentTime+0.10;
+    const root = 220, melody = [0,4,7,11,14,7,4,0,9,7,4,7,11,14,16,11];
+    // 主旋律
+    for(let i=0;i<32;++i){
+      let note = melody[i%melody.length];
+      let freq = root * Math.pow(2, note/12);
+      let o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = ["sawtooth","triangle","square"][i%3];
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.22, t0+i*beatLen*0.34);
+      g.gain.linearRampToValueAtTime(0.001, t0+i*beatLen*0.39);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0+i*beatLen*0.34); o.stop(t0+i*beatLen*0.39);
+      o.onended = ()=>{o.disconnect();g.disconnect();}
+    }
+    // 重擊低音
+    for(let i=0;i<18;++i){
+      let o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "triangle";
+      o.frequency.value = root * 0.5;
+      g.gain.setValueAtTime(0.28, t0+i*beatLen*0.67);
+      g.gain.linearRampToValueAtTime(0, t0+i*beatLen*0.68);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0+i*beatLen*0.67); o.stop(t0+i*beatLen*0.68);
+      o.onended = ()=>{o.disconnect();g.disconnect();}
+    }
+    // 簡易電子鼓
+    for(let i=0;i<32;++i){
+      let t = t0 + i*beatLen*0.16;
+      let buffer = ctx.createBuffer(1, ctx.sampleRate*0.05, ctx.sampleRate);
+      let data = buffer.getChannelData(0);
+      for(let j=0;j<data.length;++j) data[j]=(Math.random()*2-1)*Math.exp(-j/120);
+      let src = ctx.createBufferSource();
+      src.buffer = buffer;
+      let g = ctx.createGain();
+      g.gain.value = 0.16;
+      src.connect(g); g.connect(ctx.destination);
+      src.start(t); src.stop(t+0.05);
+      src.onended=()=>{src.disconnect();g.disconnect();}
+    }
+    setTimeout(()=>{
+      if(battleBGMPlaying) playLoop();
+      if(ctx.state !== "closed") ctx.close();
+    }, 8000); // 8秒後自動循環
+  }
+  playLoop();
+}
+function stopBattleBGM() {
+  battleBGMPlaying = false;
+  if(battleBGMctx && battleBGMctx.state !== "closed") {
+    try { battleBGMctx.close(); } catch(e){}
+  }
+}
+
+// --- 撞擊音 ---
+function playBeep() {
+  try {
+    let ctx = playBeep.ctx || (playBeep.ctx = new (window.AudioContext||window.webkitAudioContext)());
+    let o = ctx.createOscillator();
+    let g = ctx.createGain();
+    o.type = "triangle";
+    o.frequency.value = 440 + Math.random()*80;
+    g.gain.value = 0.06;
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.08);
+    o.onended = function(){ o.disconnect(); g.disconnect(); };
+  } catch (e) {}
+}
+// --- 大絕招音 ---
+function playUltimateSound() {
+  try {
+    let ctx = playUltimateSound.ctx || (playUltimateSound.ctx = new (window.AudioContext||window.webkitAudioContext)());
+    let o = ctx.createOscillator();
+    let g = ctx.createGain();
+    o.type = "sawtooth";
+    g.gain.value = 0.18;
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(350, ctx.currentTime);
+    o.frequency.linearRampToValueAtTime(1440, ctx.currentTime + 0.28);
+    g.gain.setValueAtTime(0.18, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0.0, ctx.currentTime + 0.30);
+    o.start();
+    o.stop(ctx.currentTime + 0.32);
+    o.onended = function(){ o.disconnect(); g.disconnect(); };
+  } catch (e) {}
+}
+// --- 勝利掌聲喝采音效 ---
+function playApplause() {
+  try {
+    let ctx = playApplause.ctx || (playApplause.ctx = new (window.AudioContext||window.webkitAudioContext)());
+    for(let i=0;i<23;++i){
+      let t = ctx.currentTime + 0.15 + Math.random()*0.8;
+      let gain = ctx.createGain();
+      gain.gain.value = 0.22 + Math.random()*0.22;
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0, t+0.045+Math.random()*0.05);
+      let buffer = ctx.createBuffer(1, ctx.sampleRate*0.09, ctx.sampleRate);
+      let data = buffer.getChannelData(0);
+      for(let j=0;j<data.length;++j) data[j]=Math.random()*2-1;
+      let src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(gain); gain.connect(ctx.destination);
+      src.start(t);
+      src.stop(t+0.07);
+      src.onended=()=>{src.disconnect();gain.disconnect();}
+    }
+    let osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type="triangle";
+    osc.frequency.setValueAtTime(670,ctx.currentTime+0.4);
+    osc.frequency.linearRampToValueAtTime(430,ctx.currentTime+0.92);
+    g.gain.setValueAtTime(0.18,ctx.currentTime+0.4);
+    g.gain.linearRampToValueAtTime(0.01,ctx.currentTime+1.05);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(ctx.currentTime+0.4);
+    osc.stop(ctx.currentTime+1.07);
+    osc.onended=()=>{osc.disconnect();g.disconnect();}
+  } catch(e){}
+}
+// --- 失敗嘲笑音效 ---
+function playLaugh() {
+  try {
+    let ctx = playLaugh.ctx || (playLaugh.ctx = new (window.AudioContext||window.webkitAudioContext)());
+    for(let i=0;i<5;++i){
+      let o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "square";
+      o.frequency.setValueAtTime(290+Math.random()*25, ctx.currentTime+0.1*i);
+      o.frequency.linearRampToValueAtTime(170+Math.random()*20, ctx.currentTime+0.19+0.11*i);
+      g.gain.setValueAtTime(0.09+Math.random()*0.07, ctx.currentTime+0.1*i);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime+0.19+0.11*i);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime+0.1*i); o.stop(ctx.currentTime+0.22+0.1*i);
+      o.onended = ()=>{o.disconnect();g.disconnect();}
+    }
+    let o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.type="triangle";
+    o2.frequency.setValueAtTime(690, ctx.currentTime+0.2);
+    o2.frequency.linearRampToValueAtTime(300, ctx.currentTime+0.82);
+    g2.gain.setValueAtTime(0.13, ctx.currentTime+0.2);
+    g2.gain.linearRampToValueAtTime(0, ctx.currentTime+0.87);
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.start(ctx.currentTime+0.2); o2.stop(ctx.currentTime+0.9);
+    o2.onended=()=>{o2.disconnect();g2.disconnect();}
+  } catch(e){}
+}
+
+let gameMode = "ai";
+const modal = document.getElementById("gamemode-modal");
+document.getElementById("mode-human").onclick = function() {
+  stopBGM();
+  gameMode = "human";
+  modal.style.display = "none";
+  startGame();
+};
+document.getElementById("mode-ai").onclick = function() {
+  stopBGM();
+  gameMode = "ai";
+  modal.style.display = "none";
+  startGame();
+};
+
+let canvas = document.getElementById('pong');
+let ctx = canvas.getContext('2d');
+let ultimate1Btn = document.getElementById('ultimate1-btn');
+let barLBtn = document.getElementById('barL-btn');
+let backBtn = document.getElementById('back-btn');
+
+function resizeCanvas() {
+  let ww = window.innerWidth, wh = window.innerHeight;
+  let w = Math.min(ww * 0.98, wh * 18 / 32);
+  let h = w * 32 / 18;
+  if(h > wh * 0.98) {
+    h = wh * 0.98;
+    w = h * 18 / 32;
+  }
+  if (w < 300) { w = 300; h = 300 * 32 / 18; }
+  canvas.width = w;
+  canvas.height = h;
+  canvas.style.width = w+"px";
+  canvas.style.height = h+"px";
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+backBtn.onclick = function() {
+  document.getElementById("winner").style.display = "none";
+  backBtn.style.display = "none";
+  modal.style.display = "flex";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stopBattleBGM();
+  playBGM();
+};
+
+function startGame() {
+stopBGM();
+  playBattleBGM();
+  let paddleWidth, paddleHeight, ballInitR;
+  function calcSize() {
+    paddleWidth = canvas.width * 0.16;
+    paddleHeight = canvas.height * 0.025;
+    ballInitR = Math.round(canvas.height * 0.014);
+  }
+  calcSize();
+  const playerL = { x: 0, y: 0, score: 0, barLong: false, barTime:0 };
+  const playerR = { x: 0, y: 0, score: 0, ai: (gameMode==="ai"), barLong: false, barTime:0 };
+  function initObj() {
+    playerL.x = canvas.width/2 - paddleWidth/2;
+    playerL.y = canvas.height * 0.94 - paddleHeight;
+    playerL.score = 0; playerL.barLong = false; playerL.barTime = 0;
+    playerR.x = canvas.width/2 - paddleWidth/2;
+    playerR.y = canvas.height * 0.02;
+    playerR.score = 0; playerR.barLong = false; playerR.barTime = 0;
+  }
+  initObj();
+
+  let balls = [];
+  const maxBalls = 8;
+  function splitBall(b, splitAngle=Math.PI/8) {
+    let angle = Math.atan2(b.dy, b.dx);
+    let speed = Math.sqrt(b.dx * b.dx + b.dy * b.dy);
+    let angle1 = angle + splitAngle;
+    let angle2 = angle - splitAngle;
+    return [
+      { x: b.x, y: b.y, r: b.r, dx: Math.cos(angle1) * speed, dy: Math.sin(angle1) * speed, initSpeed: b.initSpeed },
+      { x: b.x, y: b.y, r: b.r, dx: Math.cos(angle2) * speed, dy: Math.sin(angle2) * speed, initSpeed: b.initSpeed }
+    ];
+  }
+  function resetBalls(toDown) {
+    balls = [{
+      x: canvas.width/2,
+      y: canvas.height/2,
+      r: ballInitR,
+      dx: (Math.random()-0.5) * 2,
+      dy: (toDown ? 1 : -1) * (canvas.height / 110)
+    }];
+    balls[0].initSpeed = Math.sqrt(balls[0].dx*balls[0].dx + balls[0].dy*balls[0].dy);
+  }
+  resetBalls(Math.random()<0.5);
+
+  let ultimateReady = true, ultimateCooldown = 10000, ultimateTimer = 0;
+  let barLReady = true, barLTimer = 0, barLActive = false;
+  let barRReady = true, barRTimer = 0, barRActive = false;
+  let barCooldown = 10000, barActiveTime = 10000;
+  const maxScore = 10;
+  let gameEnded = false;
+  document.getElementById("winner").style.display = "none";
+  ultimate1Btn.style.display = "block";
+  barLBtn.style.display = "block";
+  backBtn.style.display = "none";
+  ultimate1Btn.disabled = false; ultimate1Btn.style.opacity = 1;
+  barLBtn.disabled = false; barLBtn.style.opacity = 1;
+  let trailLen = 8, ballTrails = [];
+
+  // 拖曳狀態
+  let draggingL = false, draggingR = false;
+  let dragStartLX = 0, dragStartLY = 0, dragStartBarLX = 0, dragStartBarLY = 0;
+  let dragStartRX = 0, dragStartRY = 0, dragStartBarRX = 0, dragStartBarRY = 0;
+
+  function getBarW(isL) {
+    let player = isL ? playerL : playerR;
+    return player.barLong ? paddleWidth * 2 : paddleWidth;
+  }
+  function getBarH() { return paddleHeight; }
+
+  function drawRect(x, y, w, h, color="#fff") {
+    ctx.save();
+    ctx.shadowBlur = 18; ctx.shadowColor = "#fff7ba";
+    ctx.globalAlpha = 0.89; ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1; ctx.restore();
+    let grad = ctx.createLinearGradient(x, y, x+w, y);
+    grad.addColorStop(0,"#fffde9a9");
+    grad.addColorStop(0.5,"#fffbe188");
+    grad.addColorStop(1,"#fffde922");
+    ctx.globalAlpha = 0.17;
+    ctx.fillStyle = grad; ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1;
+  }
+  function drawCircle(x, y, r, isUltimate) {
+    if(ballTrails.length>0) {
+      for(let j=ballTrails.length-1; j>=0; --j) {
+        let alpha = (j+1)/(trailLen+2);
+        let p = ballTrails[j];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r*1.13, 0, Math.PI*2);
+        ctx.fillStyle = "rgba(255,255,180,"+(0.09*alpha)+")";
+        ctx.shadowColor = "#ffe066aa";
+        ctx.shadowBlur = 12*alpha;
+        ctx.fill(); ctx.shadowBlur = 0;
+      }
+    }
+    let realR = isUltimate ? r * 1.16 : r;
+    let glow = ctx.createRadialGradient(x, y, realR, x, y, realR*3.1);
+    glow.addColorStop(0, isUltimate ? 'rgba(255,255,160,0.9)' : 'rgba(255,215,0,0.8)');
+    glow.addColorStop(0.3, isUltimate ? 'rgba(255,255,160,0.13)' : 'rgba(255,215,0,0.17)');
+    glow.addColorStop(1, 'rgba(255,215,0,0)');
+    ctx.beginPath();
+    ctx.arc(x, y, realR*3.1, 0, Math.PI*2);
+    ctx.fillStyle = glow; ctx.fill();
+    let grad = ctx.createRadialGradient(x-realR/3, y-realR/3, realR/4, x, y, realR);
+    grad.addColorStop(0, isUltimate ? '#fffde9' : '#fffbe3');
+    grad.addColorStop(0.36, isUltimate ? '#ffffb8' : '#ffe066');
+    grad.addColorStop(0.7, isUltimate ? '#ffe066' : '#ffd700');
+    grad.addColorStop(1, isUltimate ? '#fff700' : '#bfa100');
+    ctx.beginPath(); ctx.arc(x, y, realR, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.shadowColor = isUltimate ? "#fffdf1" : "#ffe066";
+    ctx.shadowBlur = isUltimate ? 16 : 7;
+    ctx.fill(); ctx.shadowBlur = 0;
+  }
+  function drawNet() {
+    for(let x=0; x<canvas.width; x+=canvas.width*0.057) {
+      ctx.save();
+      ctx.globalAlpha = 0.24;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = "#ffe066";
+      ctx.fillStyle = "#ffe066bb";
+      ctx.fillRect(x, canvas.height/2-1.4, canvas.width*0.03, 2.6);
+      ctx.restore();
+    }
+  }
+  function draw() {
+  ctx.globalAlpha = 1.0;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // 玩家1範圍（螢光綠）
+  let lBottom = canvas.height - paddleHeight;
+  let lTop = lBottom - (canvas.height/6 - paddleHeight);
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = "#39ff14";
+  ctx.fillRect(0, lTop, canvas.width, lBottom-lTop+paddleHeight);
+  ctx.restore();
+  // 玩家2範圍（螢光綠）
+  let rTop = 0;
+  let rBottom = rTop + (canvas.height/6 - paddleHeight);
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = "#39ff14";
+  ctx.fillRect(0, rTop, canvas.width, rBottom-rTop+paddleHeight);
+  ctx.restore();
+
+  drawNet();
+  drawRect(playerL.x, playerL.y, getBarW(true), getBarH(),
+      playerL.barLong ? "#ffe066" : "#fff");
+  drawRect(playerR.x, playerR.y, getBarW(false), getBarH(),
+      playerR.barLong ? "#ffe066" : "#fff");
+  for (let i = 0; i < balls.length; ++i)
+    drawCircle(balls[i].x, balls[i].y, balls[i].r, balls.length > 1);
+
+  ctx.font = Math.floor(canvas.height*0.057)+"px monospace";
+  ctx.fillStyle = "#ffe066";
+  ctx.textAlign = "center";
+  ctx.shadowColor="#ffe066"; ctx.shadowBlur=8;
+  ctx.fillText(`${playerR.score}`, canvas.width/2, canvas.height*0.10);
+  ctx.fillText(`${playerL.score}`, canvas.width/2, canvas.height*0.88);
+  ctx.shadowBlur=0;
+}
+  function showScore() {
+    document.getElementById("score").textContent = "";
+  }
+  function checkGameEnd() {
+    if (playerL.score >= 10 || playerR.score >= 10) {
+      gameEnded = true;
+      let winStr = playerL.score > playerR.score ?
+        (playerR.ai ? "YOU WIN" : "PLAYER 1 WIN") :
+        (playerR.ai ? "YOU LOSE" : "PLAYER 2 WIN");
+      let winDiv = document.getElementById('winner');
+      winDiv.textContent = winStr;
+      winDiv.style.display = 'block';
+      winDiv.style.opacity = 1;
+      ultimate1Btn.style.display = 'none';
+      barLBtn.style.display = 'none';
+      backBtn.style.display = 'block';
+      if (playerL.score > playerR.score) {
+        playApplause();
+      } else {
+        playLaugh();
+      }
+    }
+  }
+
+  function update() {
+    if (gameEnded) return;
+    let lBottom = canvas.height - getBarH();
+    let lTop = lBottom - (canvas.height/6 - getBarH());
+    playerL.x = Math.max(0, Math.min(playerL.x, canvas.width-getBarW(true)));
+    playerL.y = Math.max(lTop, Math.min(playerL.y, lBottom));
+    let rTop = 0;
+    let rBottom = rTop + (canvas.height/6 - getBarH());
+    playerR.x = Math.max(0, Math.min(playerR.x, canvas.width-getBarW(false)));
+    playerR.y = Math.max(rTop, Math.min(playerR.y, rBottom));
+    if (playerR.ai) {
+      let aiCenter = playerR.x + getBarW(false)/2;
+      let ballTrack = balls[0].x;
+      if (aiCenter < ballTrack - 18) playerR.x += paddleWidth*0.13;
+      else if (aiCenter > ballTrack + 18) playerR.x -= paddleWidth*0.13;
+      playerR.x = Math.max(0, Math.min(playerR.x, canvas.width-getBarW(false)));
+    }
+
+    let scored = false;
+    for (let b = balls.length-1; b >= 0; --b) {
+      let ball = balls[b];
+      if(!ballTrails[b]) ballTrails[b]=[];
+      ballTrails[b].push({x:ball.x, y:ball.y});
+      if(ballTrails[b].length>trailLen) ballTrails[b].shift();
+
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // 撞左右牆
+      if (ball.x - ball.r < 0 || ball.x + ball.r > canvas.width) {
+        ball.dx *= -1;
+        playBeep();
+      }
+
+      // 撞下方bar
+      if (
+        ball.y + ball.r > playerL.y &&
+        ball.x > playerL.x && ball.x < playerL.x + getBarW(true)
+      ) {
+        playBeep();
+        ball.dy = -Math.abs(ball.dy);
+        let collidePoint = ball.x - (playerL.x + getBarW(true)/2);
+        ball.dx += collidePoint * 0.01;
+        ball.dy *= 1.07; ball.dx *= 1.07;
+        let curSpeed = Math.sqrt(ball.dx*ball.dx + ball.dy*ball.dy);
+        if(curSpeed > ball.initSpeed * 3) {
+          let ratio = (ball.initSpeed * 3) / curSpeed;
+          ball.dx *= ratio;
+          ball.dy *= ratio;
+        }
+      }
+      // 撞上方bar
+      if (
+        ball.y - ball.r < playerR.y + getBarH() &&
+        ball.x > playerR.x && ball.x < playerR.x + getBarW(false)
+      ) {
+        playBeep();
+        ball.dy = Math.abs(ball.dy);
+        let collidePoint = ball.x - (playerR.x + getBarW(false)/2);
+        ball.dx += collidePoint * 0.01;
+        ball.dy *= 1.07; ball.dx *= 1.07;
+        let curSpeed = Math.sqrt(ball.dx*ball.dx + ball.dy*ball.dy);
+        if(curSpeed > ball.initSpeed * 3) {
+          let ratio = (ball.initSpeed * 3) / curSpeed;
+          ball.dx *= ratio;
+          ball.dy *= ratio;
+        }
+      }
+
+      if (ball.y - ball.r < 0) {
+        playerL.score += 1;
+        balls.splice(b, 1); ballTrails.splice(b,1); scored = true;
+      } else if (ball.y + ball.r > canvas.height) {
+        playerR.score += 1;
+        balls.splice(b, 1); ballTrails.splice(b,1); scored = true;
+      }
+    }
+    for (let i = 0; i < balls.length; ++i) {
+      for (let j = i + 1; j < balls.length; ++j) {
+        let b1 = balls[i], b2 = balls[j];
+        let dx = b1.x - b2.x, dy = b1.y - b2.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        let minDist = b1.r + b2.r;
+        if (dist < minDist && dist > 0) {
+          playBeep();
+          let overlap = minDist - dist + 0.1;
+          let nx = dx / dist, ny = dy / dist;
+          b1.x += nx * (overlap/2);
+          b1.y += ny * (overlap/2);
+          b2.x -= nx * (overlap/2);
+          b2.y -= ny * (overlap/2);
+          let kx = nx, ky = ny;
+          let v1 = b1.dx * kx + b1.dy * ky;
+          let v2 = b2.dx * kx + b2.dy * ky;
+          let delta = v1 - v2;
+          b1.dx -= delta * kx;
+          b1.dy -= delta * ky;
+          b2.dx += delta * kx;
+          b2.dy += delta * ky;
+        }
+      }
+    }
+    checkGameEnd();
+    if (!gameEnded && scored && balls.length === 0) {
+      resetBalls(Math.random()<0.5);
+      ballTrails=[];
+    }
+    if (!ultimateReady && (performance.now() - ultimateTimer > ultimateCooldown) && balls.length < maxBalls) {
+      ultimateReady = true;
+      ultimate1Btn.disabled = false;
+      ultimate1Btn.textContent = "分裂大絕招";
+      ultimate1Btn.style.opacity = 1;
+    } else if (!ultimateReady) {
+      ultimate1Btn.textContent = "冷卻中" + Math.ceil((ultimateCooldown - (performance.now() - ultimateTimer))/1000) + "秒";
+    }
+    if (barLActive && (performance.now()-barLTimer>barActiveTime)) {
+      playerL.barLong = false; barLActive = false;
+      barLReady = false; barLTimer = performance.now();
+      barLBtn.textContent = "冷卻中10秒";
+      barLBtn.disabled = true; barLBtn.style.opacity = 0.5;
+    } else if (barLActive) {
+      let t = Math.ceil((barActiveTime-(performance.now()-barLTimer))/1000);
+      barLBtn.textContent = "剩"+t+"秒";
+    }
+    if (!barLActive && !barLReady && (performance.now()-barLTimer>barCooldown)) {
+      barLReady = true;
+      barLBtn.disabled = false; barLBtn.style.opacity = 1;
+      barLBtn.textContent = "Bar大絕招";
+    }
+    if (barRActive && (performance.now()-barRTimer>barActiveTime)) {
+      playerR.barLong = false; barRActive = false;
+      barRReady = false; barRTimer = performance.now();
+    }
+    if (!barRActive && !barRReady && (performance.now()-barRTimer>barCooldown)) {
+      barRReady = true;
+    }
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    showScore();
+    if (!gameEnded) requestAnimationFrame(gameLoop);
+  }
+
+  // 手機拖曳
+  canvas.addEventListener('touchstart', function(e){
+  let rect = canvas.getBoundingClientRect();
+  let touch = e.touches[0];
+  let x = touch.clientX - rect.left;
+  let y = touch.clientY - rect.top;
+  // 改成只要觸碰下半部就能拖動下方球拍
+  if (y >= canvas.height/2) {
+    draggingL = true;
+    dragStartLX = x;
+    dragStartLY = y;
+    dragStartBarLX = playerL.x;
+    dragStartBarLY = playerL.y;
+  }
+  // 同理，上方球拍
+  if (!playerR.ai && y < canvas.height/2) {
+    draggingR = true;
+    dragStartRX = x;
+    dragStartRY = y;
+    dragStartBarRX = playerR.x;
+    dragStartBarRY = playerR.y;
+  }
+  e.preventDefault();
+}, {passive:false});
+  canvas.addEventListener('touchmove', function(e){
+  let rect = canvas.getBoundingClientRect();
+  for (let i = 0; i < e.touches.length; ++i) {
+    let touch = e.touches[i];
+    let x = touch.clientX - rect.left;
+    let y = touch.clientY - rect.top;
+    // 下半部
+    if (y >= canvas.height/2) {
+      playerL.x = Math.max(0, Math.min(x - paddleWidth/2, canvas.width - paddleWidth));
+      // 只允許在原本螢光綠範圍內
+      let lBottom = canvas.height - paddleHeight;
+      let lTop = lBottom - (canvas.height/6 - paddleHeight);
+      playerL.y = Math.max(lTop, Math.min(y - paddleHeight/2, lBottom));
+    }
+    // 上半部
+    if (!playerR.ai && y < canvas.height/2) {
+      playerR.x = Math.max(0, Math.min(x - paddleWidth/2, canvas.width - paddleWidth));
+      let rTop = 0;
+      let rBottom = rTop + (canvas.height/6 - paddleHeight);
+      playerR.y = Math.max(rTop, Math.min(y - paddleHeight/2, rBottom));
+    }
+  }
+  e.preventDefault();
+}, {passive:false});
+  canvas.addEventListener('touchend', function(e){
+    draggingL = false;
+    draggingR = false;
+  });
+
+  // 滑鼠拖曳邏輯
+ 
+ canvas.addEventListener('mousemove', function(e){
+  let rect = canvas.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  let y = e.clientY - rect.top;
+  // 玩家1（下方1/6區域）
+  let lBottom = canvas.height - paddleHeight;
+  let lTop = lBottom - (canvas.height/6 - paddleHeight);
+  if(y >= canvas.height/2) {
+    playerL.x = Math.max(0, Math.min(x - paddleWidth/2, canvas.width-paddleWidth));
+    playerL.y = Math.max(lTop, Math.min(y - paddleHeight/2, lBottom));
+  }
+  // 玩家2（上方1/6區域，且必須雙人模式才有效）
+  let rTop = 0;
+  let rBottom = rTop + (canvas.height/6 - paddleHeight);
+  if (!playerR.ai && y >= rTop && y <= rBottom) {
+    playerR.x = Math.max(0, Math.min(x - paddleWidth/2, canvas.width-paddleWidth));
+    playerR.y = Math.max(rTop, Math.min(y - paddleHeight/2, rBottom));
+  }
+});
+  
+  // 分裂大絕招
+  ultimate1Btn.onclick = () => {
+    if (ultimateReady && balls.length < maxBalls && !gameEnded) {
+      playUltimateSound();
+      ultimateReady = false;
+      ultimate1Btn.disabled = true;
+      ultimate1Btn.textContent = "冷卻中10秒";
+      ultimate1Btn.style.opacity = 0.5;
+      ultimateTimer = performance.now();
+      let newBalls = [];
+      let splitAngle = Math.PI/8;
+      for (let i=0; i<balls.length; ++i) {
+        let split = splitBall(balls[i], splitAngle);
+        newBalls.push(split[0], split[1]);
+      }
+      balls = newBalls.slice(0, maxBalls);
+    }
+  };
+  // bar大絕招：下方玩家
+  barLBtn.onclick = () => {
+    if (barLReady && !barLActive && !gameEnded) {
+      playUltimateSound();
+      barLReady = false; barLActive = true; barLTimer = performance.now();
+      playerL.barLong = true;
+      barLBtn.textContent = "剩10秒";
+      barLBtn.disabled = true;
+      barLBtn.style.opacity = 0.95;
+    }
+  };
+
+  window.addEventListener('resize', () => {
+    calcSize();
+    initObj();
+  });
+
+  showScore();
+  gameLoop();
+}
+
+function userInteractionPlayBGM() {
+  playBGM();
+  // 只執行一次後移除所有綁定
+  window.removeEventListener('mousedown', userInteractionPlayBGM);
+  window.removeEventListener('touchstart', userInteractionPlayBGM);
+  window.removeEventListener('keydown', userInteractionPlayBGM);
+  document.getElementById("mode-human").removeEventListener('click', userInteractionPlayBGM);
+  document.getElementById("mode-ai").removeEventListener('click', userInteractionPlayBGM);
+}
+
+window.addEventListener('mousedown', userInteractionPlayBGM);
+window.addEventListener('touchstart', userInteractionPlayBGM);
+window.addEventListener('keydown', userInteractionPlayBGM);
+document.getElementById("mode-human").addEventListener('click', userInteractionPlayBGM);
+document.getElementById("mode-ai").addEventListener('click', userInteractionPlayBGM);
+
+
+  </script>
+</body>
+</html>
