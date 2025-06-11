@@ -1,0 +1,10 @@
+# 切換到專案資料夾
+cd /workspace/pong-game
+
+# 將所有 HTML 程式碼合併成一個純文字檔
+cat index.html \
+    "pong_full - ver06100307.html" \
+    pong_full_ver06100307.html \
+    pong_full_ver06100328.html \
+    pong_full_ver06100343.html \
+    > pong_game_code.txt
